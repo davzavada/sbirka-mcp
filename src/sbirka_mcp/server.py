@@ -21,11 +21,17 @@ from mcp.server.fastmcp import FastMCP
 from .citations import citace_to_stale_url, encode_stale_url
 from .client import elegislativa_client, esbirka_client
 
+def _truthy(value: str) -> bool:
+    return value.strip().lower() in ("1", "true", "yes", "on")
+
+
 mcp = FastMCP(
     "sbirka-mcp",
     host=os.environ.get("MCP_HOST", "127.0.0.1"),
     port=int(os.environ.get("MCP_PORT", "8099")),
     log_level=os.environ.get("MCP_LOG_LEVEL", "INFO").upper(),
+    streamable_http_path=os.environ.get("MCP_HTTP_PATH", "/mcp"),
+    stateless_http=_truthy(os.environ.get("MCP_STATELESS_HTTP", "false")),
 )
 
 

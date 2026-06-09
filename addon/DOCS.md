@@ -1,10 +1,10 @@
 # e-Sbírka MCP Server — Home Assistant add-on
 
 Runs [`sbirka-mcp`](https://github.com/davzavada/sbirka-mcp) as a network service
-inside Home Assistant. It exposes an **MCP SSE endpoint** that the Home Assistant
-**MCP Client** integration (or any SSE-capable MCP client) can connect to, giving
-your assistant tools to search Czech legislation (e-Legislativa) and look up
-published regulations (e-Sbírka).
+inside Home Assistant. It exposes a **Streamable HTTP MCP endpoint** that remote MCP
+clients (Claude connectors, Claude Code, …) connect to, giving your assistant tools
+to search Czech legislation (e-Legislativa) and look up published regulations
+(e-Sbírka).
 
 ## Installation
 
@@ -26,20 +26,21 @@ API call returns an authentication error.
 > The data is informational only. Respect the agreed call quota (the API enforces it
 > with HTTP 429) and do not share your access key.
 
-## Connecting Home Assistant to it
+## Connecting a client to it
 
-The add-on serves SSE on port **8099** at path **`/sse`**.
-
-Add the **MCP Client** integration (**Settings → Devices & Services → Add Integration
-→ Model Context Protocol**) and point it at:
+The add-on serves **Streamable HTTP** on port **8099** at the **root path** (`/`):
 
 ```
-http://<your-ha-host>:8099/sse
+http://<your-ha-host>:8099/
 ```
 
-(If both run on the same machine you can use the add-on hostname, e.g.
-`http://addon_<slug>_sbirka_mcp:8099/sse` on the internal Docker network; the exact
-host depends on your setup. The exposed port 8099 also works.)
+* **Claude Desktop** — Settings → Connectors → Add custom connector → paste the URL.
+* **Claude Code** — `claude mcp add --transport http sbirka http://<ha-host>:8099/`
+* **claude.ai (web/mobile)** — needs a public HTTPS URL (e.g. via Cloudflare Tunnel),
+  not a LAN address.
+
+The endpoint has no authentication, so only expose it on a trusted network or put an
+auth layer (Cloudflare Access, etc.) in front before publishing it to the internet.
 
 ## Tools provided
 

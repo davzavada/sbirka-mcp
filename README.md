@@ -64,12 +64,20 @@ Optional environment overrides: `ESBIRKA_API_BASE_URL`,
 ## Transports
 
 By default the server speaks **stdio** (for desktop clients that launch it as a
-subprocess). Set `MCP_TRANSPORT=sse` to run it as a network service instead,
-exposing an SSE endpoint on `MCP_HOST:MCP_PORT` (default `127.0.0.1:8099`) at path
-`/sse`. This is the mode used by the Home Assistant add-on.
+subprocess). For a network service set `MCP_TRANSPORT`:
+
+* `streamable-http` — modern transport used by Claude connectors. Endpoint path is
+  `MCP_HTTP_PATH` (default `/mcp`); set it to `/` to serve at the root. Use
+  `MCP_STATELESS_HTTP=true` for connectors that don't keep a session. This is the
+  mode used by the Home Assistant add-on (mounted at `/`).
+* `sse` — older transport, endpoint at `/sse` (+ `/messages/`).
+
+Host/port come from `MCP_HOST`/`MCP_PORT` (default `127.0.0.1:8099`).
 
 ```bash
-MCP_TRANSPORT=sse MCP_HOST=0.0.0.0 MCP_PORT=8099 ESEL_API_ACCESS_KEY=<key> sbirka-mcp
+# Streamable HTTP at the root path (what the HA add-on runs):
+MCP_TRANSPORT=streamable-http MCP_HTTP_PATH=/ MCP_STATELESS_HTTP=true \
+  MCP_HOST=0.0.0.0 MCP_PORT=8099 ESEL_API_ACCESS_KEY=<key> sbirka-mcp
 ```
 
 ## Home Assistant add-on
@@ -77,9 +85,10 @@ MCP_TRANSPORT=sse MCP_HOST=0.0.0.0 MCP_PORT=8099 ESEL_API_ACCESS_KEY=<key> sbirk
 This repository is also a Home Assistant add-on repository. In Home Assistant:
 **Settings → Add-ons → Add-on Store → ⋮ → Repositories**, add
 `https://github.com/davzavada/sbirka-mcp`, then install **e-Sbírka MCP Server**.
-The API key is an add-on option (`access_key`), and the server is reachable over SSE
-at `http://<ha-host>:8099/sse` — connect it via the Home Assistant **MCP Client**
-integration. See [`addon/DOCS.md`](addon/DOCS.md) for details.
+The API key is an add-on option (`access_key`), and the server is reachable over
+Streamable HTTP at `http://<ha-host>:8099/` — add it as a custom connector in Claude
+Desktop, or `claude mcp add --transport http sbirka http://<ha-host>:8099/`. See
+[`addon/DOCS.md`](addon/DOCS.md) for details.
 
 ## Tools
 
