@@ -1,0 +1,26 @@
+name: e-Sbírka MCP Server
+version: "0.1.0"
+slug: sbirka_mcp
+description: >-
+  MCP server for the Czech e-Sbírka / e-Legislativa public REST API
+  (legal research and regulation search). Exposes an SSE MCP endpoint.
+url: https://github.com/davzavada/sbirka-mcp
+arch:
+  - aarch64
+  - amd64
+  - armv7
+  - armhf
+  - i386
+init: false
+startup: services
+boot: auto
+ports:
+  8099/tcp: 8099
+ports_description:
+  8099/tcp: MCP SSE endpoint (path /sse)
+options:
+  access_key: ""
+  log_level: info
+schema:
+  access_key: password?
+  log_level: list(debug|info|warning|error)

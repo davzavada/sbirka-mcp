@@ -13,6 +13,7 @@ Authentication uses the shared ``esel-api-access-key`` header, read from the
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -20,7 +21,12 @@ from mcp.server.fastmcp import FastMCP
 from .citations import citace_to_stale_url, encode_stale_url
 from .client import elegislativa_client, esbirka_client
 
-mcp = FastMCP("sbirka-mcp")
+mcp = FastMCP(
+    "sbirka-mcp",
+    host=os.environ.get("MCP_HOST", "127.0.0.1"),
+    port=int(os.environ.get("MCP_PORT", "8099")),
+    log_level=os.environ.get("MCP_LOG_LEVEL", "INFO").upper(),
+)
 
 
 def _search_body(
@@ -189,8 +195,20 @@ def ziskat_dokument_sbirky(citace: str) -> dict[str, Any]:
 
 
 def main() -> None:
-    """Console-script entry point — runs the server over stdio."""
-    mcp.run()
+    """Console-script entry point.
+
+    Transport is selected by the ``MCP_TRANSPORT`` environment variable:
+
+    * ``stdio`` (default) — for desktop MCP clients that launch the server as a
+      subprocess (Claude Desktop / Claude Code).
+    * ``sse`` — run as a network service exposing ``/sse`` on ``MCP_HOST``:``MCP_PORT``
+      (used by the Home Assistant add-on / HA MCP Client integration).
+    """
+    transport = os.environ.get("MCP_TRANSPORT", "stdio").lower()
+    if transport in ("sse", "streamable-http"):
+        mcp.run(transport=transport)
+    else:
+        mcp.run()
 
 
 if __name__ == "__main__":

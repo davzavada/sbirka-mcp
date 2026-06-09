@@ -61,6 +61,26 @@ fill it in. `.env` is gitignored — never commit your key.
 Optional environment overrides: `ESBIRKA_API_BASE_URL`,
 `ELEGISLATIVA_API_BASE_URL`, `ESEL_API_TIMEOUT` (seconds).
 
+## Transports
+
+By default the server speaks **stdio** (for desktop clients that launch it as a
+subprocess). Set `MCP_TRANSPORT=sse` to run it as a network service instead,
+exposing an SSE endpoint on `MCP_HOST:MCP_PORT` (default `127.0.0.1:8099`) at path
+`/sse`. This is the mode used by the Home Assistant add-on.
+
+```bash
+MCP_TRANSPORT=sse MCP_HOST=0.0.0.0 MCP_PORT=8099 ESEL_API_ACCESS_KEY=<key> sbirka-mcp
+```
+
+## Home Assistant add-on
+
+This repository is also a Home Assistant add-on repository. In Home Assistant:
+**Settings → Add-ons → Add-on Store → ⋮ → Repositories**, add
+`https://github.com/davzavada/sbirka-mcp`, then install **e-Sbírka MCP Server**.
+The API key is an add-on option (`access_key`), and the server is reachable over SSE
+at `http://<ha-host>:8099/sse` — connect it via the Home Assistant **MCP Client**
+integration. See [`addon/DOCS.md`](addon/DOCS.md) for details.
+
 ## Tools
 
 | Tool | What it does | API |
