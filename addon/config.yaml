@@ -1,5 +1,5 @@
 name: e-Sbírka MCP Server
-version: "0.2.0"
+version: "0.3.0"
 slug: sbirka_mcp
 description: >-
   MCP server for the Czech e-Sbírka / e-Legislativa public REST API

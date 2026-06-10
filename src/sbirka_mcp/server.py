@@ -17,6 +17,8 @@ import os
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
+from starlette.requests import Request
+from starlette.responses import Response
 
 from .citations import citace_to_stale_url, encode_stale_url
 from .client import elegislativa_client, esbirka_client
@@ -33,6 +35,26 @@ mcp = FastMCP(
     streamable_http_path=os.environ.get("MCP_HTTP_PATH", "/mcp"),
     stateless_http=_truthy(os.environ.get("MCP_STATELESS_HTTP", "false")),
 )
+
+# A "§" favicon, served when the public HTTP endpoint is opened in a browser.
+_FAVICON_SVG = (
+    b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
+    b'<rect width="64" height="64" rx="12" fill="#1f4e79"/>'
+    b'<text x="32" y="34" font-family="Georgia,\'Times New Roman\',serif"'
+    b' font-size="46" font-weight="bold" fill="#ffffff" text-anchor="middle"'
+    b' dominant-baseline="central">\xc2\xa7</text></svg>'
+)
+
+
+@mcp.custom_route("/favicon.svg", methods=["GET"])
+async def favicon_svg(request: Request) -> Response:
+    return Response(content=_FAVICON_SVG, media_type="image/svg+xml")
+
+
+@mcp.custom_route("/favicon.ico", methods=["GET"])
+async def favicon_ico(request: Request) -> Response:
+    # Modern browsers render an SVG served here fine; avoids shipping a binary .ico.
+    return Response(content=_FAVICON_SVG, media_type="image/svg+xml")
 
 
 def _search_body(
