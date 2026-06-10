@@ -74,6 +74,14 @@ subprocess). For a network service set `MCP_TRANSPORT`:
 
 Host/port come from `MCP_HOST`/`MCP_PORT` (default `127.0.0.1:8099`).
 
+### Optional OAuth
+
+Set `MCP_OAUTH_ENABLED=true` together with `MCP_OAUTH_PASSWORD=<secret>` and
+`MCP_PUBLIC_URL=<https://your-host>` to put a password-gated OAuth 2.0 login in front
+of the HTTP endpoint. This is what lets the **claude.ai web connector** attach (it
+requires OAuth) and stops an exposed URL from being wide open. Tokens are kept
+in memory, so they reset on restart.
+
 ```bash
 # Streamable HTTP at the root path (what the HA add-on runs):
 MCP_TRANSPORT=streamable-http MCP_HTTP_PATH=/ MCP_STATELESS_HTTP=true \

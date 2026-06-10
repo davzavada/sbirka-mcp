@@ -20,5 +20,19 @@ if bashio::config.is_empty 'access_key'; then
         "No 'access_key' configured — API calls will fail until you set it in the add-on Configuration tab."
 fi
 
+# Optional OAuth: required by clients like the claude.ai web connector. Needs both a
+# password and the public URL the server is reached on (e.g. https://sbirka.example.eu).
+if bashio::config.true 'oauth_enabled'; then
+    if bashio::config.is_empty 'oauth_password' || bashio::config.is_empty 'public_url'; then
+        bashio::log.warning \
+            "oauth_enabled is on but 'oauth_password' or 'public_url' is empty — OAuth stays OFF (endpoint is unauthenticated)."
+    else
+        export MCP_OAUTH_ENABLED="true"
+        export MCP_OAUTH_PASSWORD="$(bashio::config 'oauth_password')"
+        export MCP_PUBLIC_URL="$(bashio::config 'public_url')"
+        bashio::log.info "OAuth enabled; issuer ${MCP_PUBLIC_URL}"
+    fi
+fi
+
 bashio::log.info "Starting sbirka-mcp (Streamable HTTP) on port 8099 at path /"
 exec sbirka-mcp

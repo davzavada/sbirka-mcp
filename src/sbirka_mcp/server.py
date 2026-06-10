@@ -14,17 +14,39 @@ Authentication uses the shared ``esel-api-access-key`` header, read from the
 from __future__ import annotations
 
 import os
+import secrets
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import HTMLResponse, RedirectResponse, Response
 
+from .auth import PasswordOAuthProvider, build_auth_settings, login_page
 from .citations import citace_to_stale_url, encode_stale_url
 from .client import elegislativa_client, esbirka_client
 
 def _truthy(value: str) -> bool:
     return value.strip().lower() in ("1", "true", "yes", "on")
+
+
+# --- optional OAuth -------------------------------------------------------
+# Enabled via MCP_OAUTH_ENABLED + MCP_OAUTH_PASSWORD + MCP_PUBLIC_URL. When on,
+# the HTTP endpoint requires a Bearer token obtained through a password login.
+_oauth_provider: PasswordOAuthProvider | None = None
+_oauth_kwargs: dict[str, Any] = {}
+if (
+    _truthy(os.environ.get("MCP_OAUTH_ENABLED", "false"))
+    and os.environ.get("MCP_OAUTH_PASSWORD")
+    and os.environ.get("MCP_PUBLIC_URL")
+):
+    _public_url = os.environ["MCP_PUBLIC_URL"]
+    _oauth_provider = PasswordOAuthProvider(
+        password=os.environ["MCP_OAUTH_PASSWORD"], public_url=_public_url
+    )
+    _oauth_kwargs = {
+        "auth_server_provider": _oauth_provider,
+        "auth": build_auth_settings(_public_url),
+    }
 
 
 mcp = FastMCP(
@@ -34,7 +56,32 @@ mcp = FastMCP(
     log_level=os.environ.get("MCP_LOG_LEVEL", "INFO").upper(),
     streamable_http_path=os.environ.get("MCP_HTTP_PATH", "/mcp"),
     stateless_http=_truthy(os.environ.get("MCP_STATELESS_HTTP", "false")),
+    **_oauth_kwargs,
 )
+
+
+if _oauth_provider is not None:
+
+    @mcp.custom_route("/login", methods=["GET"])
+    async def login_get(request: Request) -> Response:
+        rid = request.query_params.get("rid", "")
+        if not _oauth_provider.pending_exists(rid):
+            return HTMLResponse("Neplatný nebo vypršelý požadavek.", status_code=400)
+        return HTMLResponse(login_page(rid))
+
+    @mcp.custom_route("/login", methods=["POST"])
+    async def login_post(request: Request) -> Response:
+        form = await request.form()
+        rid = str(form.get("rid", ""))
+        password = str(form.get("password", ""))
+        if not _oauth_provider.pending_exists(rid):
+            return HTMLResponse("Neplatný nebo vypršelý požadavek.", status_code=400)
+        if not secrets.compare_digest(password, _oauth_provider.password):
+            return HTMLResponse(login_page(rid, error=True), status_code=401)
+        redirect_url = _oauth_provider.complete_login(rid)
+        if redirect_url is None:
+            return HTMLResponse("Neplatný nebo vypršelý požadavek.", status_code=400)
+        return RedirectResponse(redirect_url, status_code=302)
 
 # A "§" favicon, served when the public HTTP endpoint is opened in a browser.
 _FAVICON_SVG = (

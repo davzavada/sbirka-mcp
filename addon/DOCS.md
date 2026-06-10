@@ -18,6 +18,9 @@ to search Czech legislation (e-Legislativa) and look up published regulations
 | Option | Description |
 | --- | --- |
 | `access_key` | Your e-Sbírka / e-Legislativa REST API access key from the Ministry of the Interior. Stored as a secret. |
+| `oauth_enabled` | Turn on OAuth login in front of the MCP endpoint. Required to attach the **claude.ai web** connector, and recommended before any public exposure. |
+| `oauth_password` | The shared password users must enter to authorise a client (only used when `oauth_enabled`). Stored as a secret. |
+| `public_url` | The external base URL the server is reached on, e.g. `https://sbirka.example.eu`. Required when `oauth_enabled` so OAuth metadata advertises the right URLs. |
 | `log_level` | `debug`, `info` (default), `warning`, or `error`. |
 
 Set `access_key`, then **Start** the add-on. Without it the server starts but every
@@ -34,13 +37,22 @@ The add-on serves **Streamable HTTP** on port **8099** at the **root path** (`/`
 http://<your-ha-host>:8099/
 ```
 
-* **Claude Desktop** — Settings → Connectors → Add custom connector → paste the URL.
 * **Claude Code** — `claude mcp add --transport http sbirka http://<ha-host>:8099/`
-* **claude.ai (web/mobile)** — needs a public HTTPS URL (e.g. via Cloudflare Tunnel),
-  not a LAN address.
+* **Claude Desktop** — use the `mcp-remote` bridge in the config pointing at the URL.
+* **claude.ai (web/mobile)** — needs a **public HTTPS URL** (e.g. your Cloudflare
+  Tunnel, like `https://sbirka.example.eu/`) **and OAuth enabled** (see below).
 
-The endpoint has no authentication, so only expose it on a trusted network or put an
-auth layer (Cloudflare Access, etc.) in front before publishing it to the internet.
+### Enabling OAuth for the claude.ai web connector
+
+The web connector only attaches to servers that implement OAuth. Turn it on:
+
+1. Set `oauth_enabled: true`, choose an `oauth_password`, and set `public_url` to your
+   public HTTPS address (e.g. `https://sbirka.example.eu`). Restart the add-on.
+2. In claude.ai → **Settings → Connectors → Add custom connector** → paste the public
+   URL. Claude redirects you to a `§` login page; enter the password to authorise.
+
+Without OAuth the endpoint is unauthenticated — only expose it on a trusted network.
+With OAuth, anyone who knows the password can connect, so pick a strong one.
 
 ## Tools provided
 

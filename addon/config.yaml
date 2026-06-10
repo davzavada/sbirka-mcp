@@ -1,5 +1,5 @@
 name: e-Sbírka MCP Server
-version: "0.3.0"
+version: "0.4.0"
 slug: sbirka_mcp
 description: >-
   MCP server for the Czech e-Sbírka / e-Legislativa public REST API
@@ -20,7 +20,13 @@ ports_description:
   8099/tcp: MCP endpoint (Streamable HTTP, path /)
 options:
   access_key: ""
+  oauth_enabled: false
+  oauth_password: ""
+  public_url: ""
   log_level: info
 schema:
   access_key: password?
+  oauth_enabled: bool
+  oauth_password: password?
+  public_url: str?
   log_level: list(debug|info|warning|error)
