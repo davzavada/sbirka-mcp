@@ -112,6 +112,67 @@ Desktop, or `claude mcp add --transport http sbirka http://<ha-host>:8099/`. See
 Search results carry an `identifikator`; pass it to `ziskat_navrh` for detail.
 Use `vypis_ciselnik("DruhAktu")` to discover values for the `typ_aktu` filter.
 
+---
+
+# curia-mcp (EU case-law bridge)
+
+A second MCP server in this repo, **`curia-mcp`**, bridges EU case-law. The Court of
+Justice's [InfoCuria](https://infocuria.curia.europa.eu/tabs/tout) site has **no API**
+(and its January 2026 single-page UI blocks scraping), so this server uses the EU
+Publications Office **Cellar** repository as its data backbone — a public,
+no-registration SPARQL endpoint plus REST content negotiation by **CELEX** number —
+and keeps InfoCuria for stable, human-facing deep links by case number.
+
+No API key is required.
+
+## Tools
+
+| Tool | What it does | Source |
+| --- | --- | --- |
+| `search_case_law` | Search case-law metadata/titles by text, court, year range | Cellar SPARQL |
+| `fetch_case_metadata` | Title / ECLI / date for a case by CELEX number | Cellar SPARQL |
+| `fetch_case_text` | Full document text by CELEX number, in a chosen language | Cellar REST |
+| `lookup_case_number` | Resolve a case number (e.g. `C-159/18`) to an InfoCuria link | InfoCuria |
+| `identify_reference` | Detect whether a string is a CELEX, ECLI, or case number | offline |
+
+Identifier formats: **CELEX** `62018CJ0159` (sector 6 = case-law), **ECLI**
+`ECLI:EU:C:2019:933`, **case number** `C-159/18` (Court of Justice), `T-79/16`
+(General Court), `F-1/05` (Civil Service Tribunal). A case number alone can't be
+turned into a CELEX (its year is when the case was *brought*, not the judgment year),
+so it routes to an InfoCuria deep link.
+
+## Run
+
+```bash
+curia-mcp                       # stdio (default)
+MCP_TRANSPORT=streamable-http MCP_PORT=8098 curia-mcp   # network service
+```
+
+MCP client config:
+
+```json
+{
+  "mcpServers": {
+    "curia": { "command": "uvx", "args": ["--from", "/path/to/sbirka-mcp", "curia-mcp"] }
+  }
+}
+```
+
+Optional environment overrides: `CELLAR_SPARQL_URL`, `CELLAR_RESOURCE_BASE`,
+`CURIA_HTTP_TIMEOUT`, `CURIA_USER_AGENT`.
+
+## Status / what still needs live validation
+
+The CELEX/ECLI/case-number parsing and InfoCuria link building are fully tested
+offline. The **Cellar SPARQL queries** in `eurlex.py` follow the documented `cdm`
+ontology but should be tuned against the live endpoint — if a field comes back empty,
+capture a working query and adjust the predicates. Full-text search over judgment
+*bodies* is not available via Cellar SPARQL (it indexes metadata/titles); for that,
+open the `infocuria_search` link the tool returns, or we can add EUR-Lex Expert
+Search (which needs registered web-service credentials).
+
+---
+
 ## Development
 
 ```bash
@@ -119,5 +180,5 @@ pip install -e ".[dev]"
 pytest
 ```
 
-`tests/` runs fully offline (citation parsing). Live calls require a valid key and
-network access to the API hosts.
+`tests/` runs fully offline (citation parsing, CELEX/ECLI/case-number parsing, link
+building). Live calls require a valid key and network access to the API / Cellar hosts.
